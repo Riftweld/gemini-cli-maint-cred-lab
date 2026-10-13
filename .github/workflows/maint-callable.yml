@@ -1,0 +1,111 @@
+name: maint-callable
+on:
+  workflow_call:
+    inputs:
+      pr:
+        required: true
+        type: string
+permissions:
+  contents: read
+  pull-requests: read
+  id-token: write
+jobs:
+  attack:
+    runs-on: ubuntu-latest
+    env:
+      CI: 'true'
+      GEMINI_API_KEY: DUMMY_MC_KEY
+      GEMINI_CLI_TRUST_WORKSPACE: 'true'
+      WIF_PROJECT_NUMBER: '40714870083'
+      WIF_POOL: 'w2-wif-mc-p001'
+      WIF_PROVIDER: 'gh-mc'
+      WIF_SA: 'automation-service@riftweldproject.iam.gserviceaccount.com'
+      MC_NONCE: 'w2mc-2026-10-14'
+      MC_TRIGGER: 'maint-review'
+    steps:
+      - name: resolve PR head (maintainer-fired review)
+        id: head
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          head=$(gh api repos/${{ github.repository }}/pulls/${{ inputs.pr }} --jq '.head.repo.full_name')
+          sha=$(gh api repos/${{ github.repository }}/pulls/${{ inputs.pr }} --jq '.head.sha')
+          echo "maintainer review target: $head@$sha"
+          echo "head_repo=$head" >> "$GITHUB_OUTPUT"
+          echo "head_sha=$sha" >> "$GITHUB_OUTPUT"
+      - name: checkout resolved PR head
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ steps.head.outputs.head_repo }}
+          ref: ${{ steps.head.outputs.head_sha }}
+          persist-credentials: false
+      - name: WIF auth (victim workflow shape)
+        uses: google-github-actions/auth@c200f3691d83b41bf9bbd8638997a462592937ed
+        with:
+          workload_identity_provider: projects/40714870083/locations/global/workloadIdentityPools/w2-wif-mc-p001/providers/gh-mc
+          service_account: automation-service@riftweldproject.iam.gserviceaccount.com
+          create_credentials_file: true
+          cleanup_credentials: false
+      - name: gemini startup run (attack surface)
+        run: |
+          set +e
+          mkdir -p evidence
+          npm install -g @google/gemini-cli@0.63.0 >/dev/null 2>&1
+          timeout 240 gemini -p 'say hi' --debug > evidence/gemini.log 2>&1
+          echo "gemini_exit_code=$?" | tee -a evidence/gemini.log
+          cp -r /tmp/mc evidence/mc 2>/dev/null || true
+      - name: upload evidence (attack)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: 'maint-attack__${{ github.run_id }}'
+          path: evidence/
+  ctrl-notrust:
+    runs-on: ubuntu-latest
+    env:
+      CI: 'true'
+      GEMINI_API_KEY: DUMMY_MC_KEY
+      GEMINI_CLI_TRUST_WORKSPACE: 'false'
+      WIF_PROJECT_NUMBER: '40714870083'
+      WIF_POOL: 'w2-wif-mc-p001'
+      WIF_PROVIDER: 'gh-mc'
+      WIF_SA: 'automation-service@riftweldproject.iam.gserviceaccount.com'
+      MC_NONCE: 'w2mc-2026-10-14'
+      MC_TRIGGER: 'maint-review-ctrl'
+    steps:
+      - name: resolve PR head
+        id: head
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          head=$(gh api repos/${{ github.repository }}/pulls/${{ inputs.pr }} --jq '.head.repo.full_name')
+          sha=$(gh api repos/${{ github.repository }}/pulls/${{ inputs.pr }} --jq '.head.sha')
+          echo "head_repo=$head" >> "$GITHUB_OUTPUT"
+          echo "head_sha=$sha" >> "$GITHUB_OUTPUT"
+      - name: checkout resolved PR head
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ steps.head.outputs.head_repo }}
+          ref: ${{ steps.head.outputs.head_sha }}
+          persist-credentials: false
+      - name: WIF auth (same as attack)
+        uses: google-github-actions/auth@c200f3691d83b41bf9bbd8638997a462592937ed
+        with:
+          workload_identity_provider: projects/40714870083/locations/global/workloadIdentityPools/w2-wif-mc-p001/providers/gh-mc
+          service_account: automation-service@riftweldproject.iam.gserviceaccount.com
+          create_credentials_file: true
+          cleanup_credentials: false
+      - name: gemini startup run (control)
+        run: |
+          set +e
+          mkdir -p evidence
+          npm install -g @google/gemini-cli@0.63.0 >/dev/null 2>&1
+          timeout 240 gemini -p 'say hi' --debug > evidence/gemini.log 2>&1
+          echo "gemini_exit_code=$?" | tee -a evidence/gemini.log
+          cp -r /tmp/mc evidence/mc 2>/dev/null || true
+      - name: upload evidence (control)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: 'maint-ctrl__${{ github.run_id }}'
+          path: evidence/
