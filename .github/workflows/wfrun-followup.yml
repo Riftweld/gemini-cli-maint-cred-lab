@@ -20,12 +20,13 @@ jobs:
       MC_NONCE: 'w2mc-2026-10-14'
       MC_TRIGGER: 'workflow-run'
     steps:
-      - name: checkout head of the completed untrusted run
+      - name: checkout head of the completed untrusted run (documented opt-in)
         uses: actions/checkout@v4
         with:
           repository: ${{ github.event.workflow_run.head_repository.full_name }}
           ref: ${{ github.event.workflow_run.head_sha }}
           persist-credentials: false
+          allow-unsafe-pr-checkout: true
       - name: WIF auth (victim workflow shape)
         uses: google-github-actions/auth@c200f3691d83b41bf9bbd8638997a462592937ed
         with:
@@ -60,12 +61,13 @@ jobs:
       MC_NONCE: 'w2mc-2026-10-14'
       MC_TRIGGER: 'workflow-run-ctrl'
     steps:
-      - name: checkout head of the completed untrusted run
+      - name: checkout head of the completed untrusted run (documented opt-in)
         uses: actions/checkout@v4
         with:
           repository: ${{ github.event.workflow_run.head_repository.full_name }}
           ref: ${{ github.event.workflow_run.head_sha }}
           persist-credentials: false
+          allow-unsafe-pr-checkout: true
       - name: WIF auth (same as attack)
         uses: google-github-actions/auth@c200f3691d83b41bf9bbd8638997a462592937ed
         with:
