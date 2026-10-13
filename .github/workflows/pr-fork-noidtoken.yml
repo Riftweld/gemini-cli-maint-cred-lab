@@ -24,7 +24,7 @@ jobs:
           repository: ${{ github.event.pull_request.head.repo.full_name }}
           ref: ${{ github.event.pull_request.head.sha }}
           persist-credentials: false
-      - name: gemini startup run (no id-token: write in this workflow)
+      - name: 'gemini startup run (no id-token write in this workflow)'
         run: |
           set +e
           mkdir -p evidence

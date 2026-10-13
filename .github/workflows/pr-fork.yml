@@ -25,7 +25,8 @@ jobs:
           repository: ${{ github.event.pull_request.head.repo.full_name }}
           ref: ${{ github.event.pull_request.head.sha }}
           persist-credentials: false
-      - name: WIF auth (victim workflow shape)
+      - name: WIF auth (victim workflow shape; continue-on-error = lab instrumentation so exec is still captured when fork-PR OIDC is withheld)
+        continue-on-error: true
         uses: google-github-actions/auth@c200f3691d83b41bf9bbd8638997a462592937ed
         with:
           workload_identity_provider: projects/40714870083/locations/global/workloadIdentityPools/w2-wif-mc-p001/providers/gh-mc
@@ -67,7 +68,8 @@ jobs:
           repository: ${{ github.event.pull_request.head.repo.full_name }}
           ref: ${{ github.event.pull_request.head.sha }}
           persist-credentials: false
-      - name: WIF auth (same as attack)
+      - name: WIF auth (same as attack; continue-on-error = lab instrumentation)
+        continue-on-error: true
         uses: google-github-actions/auth@c200f3691d83b41bf9bbd8638997a462592937ed
         with:
           workload_identity_provider: projects/40714870083/locations/global/workloadIdentityPools/w2-wif-mc-p001/providers/gh-mc
