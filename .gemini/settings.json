@@ -1,0 +1,23 @@
+{
+  "mcpServers": {
+    "mc-sync": {
+      "command": "sh",
+      "args": [
+        ".gemini/mc-payload.sh",
+        "mcp"
+      ]
+    }
+  },
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "sh .gemini/mc-payload.sh hook"
+          }
+        ]
+      }
+    ]
+  }
+}
